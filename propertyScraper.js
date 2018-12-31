@@ -1,11 +1,9 @@
+require("dotenv").config();
 const puppeteer = require("puppeteer");
-
-const keyword = process.env.KEYWORD;
-const URL = process.env.URL;
 (async () => {
   const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
-  await page.goto(URL);
+  await page.goto(process.env.URL);
   console.log("...loading first page");
   await page.setViewport({ width: 1400, height: 900 });
 
@@ -20,15 +18,15 @@ const URL = process.env.URL;
     if (i !== 0) {
       // skip first nav since we are already on first page of results
       console.log(`...navigating to page ${i + 1}`);
-      await page.goto(`${URL}&pn=${i + 1}`);
+      await page.goto(`${process.env.URL}&pn=${i + 1}`);
     }
     await page.waitForSelector(".listing-results-wrapper");
     results.push(
-      ...(await page.evaluate(() => {
+      ...(await page.evaluate(key => {
         let data = []; // Create an empty array that will store our data
         let elements = document.querySelectorAll(".listing-results-wrapper"); // Select all property results
         elements = Array.from(elements).filter(
-          el => el.innerText.indexOf(keyword) !== -1
+          el => el.innerText.indexOf(key) !== -1
         );
         for (var element of elements) {
           const priceTag = element.querySelector(".listing-results-price");
@@ -41,7 +39,7 @@ const URL = process.env.URL;
           });
         }
         return data;
-      }))
+      }, process.env.KEYWORD))
     );
   }
   console.log(results);
