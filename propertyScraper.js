@@ -10,27 +10,25 @@ const validatePuppeteerError = error => {
 }
 
 const getProperties = async (location, bedsMin, bedsMax, scrapeWord) => {
-  console.log(location)
   const browser = await puppeteer.launch({ headless: true })
   try {
-    let URL =
-      'https://www.zoopla.co.uk/to-rent/property/LOCATION/?beds_max=BEDS_MAX&beds_min=BEDS_MIN&price_frequency=per_month&q=URL_LOC_ENCODE&radius=0&results_sort=newest_listings&search_source=refine&page_size=100'
-    URL = URL.replace('BEDS_MAX', bedsMax)
-    URL = URL.replace('BEDS_MIN', bedsMin)
-    URL = URL.replace(
-      'LOCATION',
-      location
-        .toLowerCase()
-        .split(' ')
-        .join('-')
-    )
-    URL = URL.replace(
-      'URL_LOC_ENCODE',
-      location
-        .split(' ')
-        .map(w => w.slice(0, 1).toUpperCase() + w.slice(1, w.length))
-        .join('%20')
-    )
+    let URL = 'https://www.zoopla.co.uk/to-rent/property/LOCATION/?beds_max=BEDS_MAX&beds_min=BEDS_MIN&page_size=100&price_frequency=per_month&q=URL_LOC_ENCODE&radius=0&results_sort=newest_listings&search_source=refine'
+      .replace('BEDS_MAX', bedsMax)
+      .replace('BEDS_MIN', bedsMin)
+      .replace(
+        'LOCATION',
+        location
+          .toLowerCase()
+          .split(' ')
+          .join('-')
+      )
+      .replace(
+        'URL_LOC_ENCODE',
+        location
+          .split(' ')
+          .map(w => w.slice(0, 1).toUpperCase() + w.slice(1, w.length))
+          .join('%20')
+      )
     const page = await browser.newPage()
     await page.setViewport({ width: 1920, height: 1080 })
 

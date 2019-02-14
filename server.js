@@ -23,7 +23,9 @@ const setUpCLI = () => {
   const readline = require('readline')
   const rl = readline.createInterface(process.stdin, process.stdout)
 
-  rl.setPrompt('Enter params, comma seperated> ')
+  rl.setPrompt(
+    'Enter location, bedsmax, bedsmin, scrape hook, comma seperated> '
+  )
   rl.prompt()
 
   rl.on('line', async line => {
