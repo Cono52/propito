@@ -33,7 +33,6 @@ const emailProps = async (email = 'test', res) => {
     .join('')}</ul>`
     )
     .join()}</div>`
-  console.log(html)
 
   let mailOptions = {
     from: email + '@gmail.com', // sender address
