@@ -1,4 +1,3 @@
-require('dotenv').config()
 const puppeteer = require('puppeteer')
 const { TimeoutError } = require('puppeteer/Errors')
 
@@ -9,8 +8,11 @@ const validatePuppeteerError = error => {
   return 'An error ocurred'
 }
 
-const getProperties = async (location, bedsMin, bedsMax, scrapeWord) => {
-  const browser = await puppeteer.launch({ headless: true })
+const getProperties = async (location, bedsMax, bedsMin, scrapeWord) => {
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  })
   try {
     let URL = 'https://www.zoopla.co.uk/to-rent/property/LOCATION/?beds_max=BEDS_MAX&beds_min=BEDS_MIN&page_size=100&price_frequency=per_month&q=URL_LOC_ENCODE&radius=0&results_sort=newest_listings&search_source=refine'
       .replace('BEDS_MAX', bedsMax)
@@ -29,6 +31,7 @@ const getProperties = async (location, bedsMin, bedsMax, scrapeWord) => {
           .map(w => w.slice(0, 1).toUpperCase() + w.slice(1, w.length))
           .join('%20')
       )
+    console.log('URL to hit:', URL)
     const page = await browser.newPage()
     await page.setViewport({ width: 1920, height: 1080 })
 

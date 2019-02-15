@@ -1,16 +1,32 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
+const path = require('path')
 const getProperties = require('./propertyScraper.js')
+const emailProps = require('./email.js')
 
-const port = process.env.PORT || 8080
+const port = process.env.PORT || 8000
 
-app.get('/getProps', async (req, res) => {
-  console.log(req.query.scrapeword)
+app.get('/', async (req, res) => {
+  res.sendFile(path.join(`${__dirname}/index.html`))
+})
+
+app.get('/getPropsToEmail', async (req, res) => {
   if (!req.query.scrapeword) {
     res.status(400).send('Please provide a scrapeword')
     return
   }
-  const result = await getProperties(req.query.scrapeword)
+  const { location, bedmax, bedmin, scrapeword, email } = req.query
+  console.log(location, bedmax, bedmin, scrapeword, email)
+  let result
+  try {
+    result = await getProperties(location, bedmax, bedmin, scrapeword)
+  } catch (e) {
+    console.log('Something went wrong while scraping')
+  }
+  if (result) {
+    emailProps(email, result)
+  }
   res.json(result)
 })
 
