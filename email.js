@@ -35,7 +35,7 @@ const emailProps = async (email = 'test', res) => {
     .join()}</div>`
 
   let mailOptions = {
-    from: email + '@gmail.com', // sender address
+    from: 'propito@sendgrid.net', // sender address
     to: email + '@gmail.com', // list of receivers
     subject: 'Propito Daily Properties List', // Subject line
     text: JSON.stringify(res), // plain text body
