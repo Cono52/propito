@@ -37,7 +37,7 @@ const emailProps = async (email = 'test', res) => {
   let mailOptions = {
     from: 'propito@sendgrid.net', // sender address
     to: email + '@gmail.com', // list of receivers
-    subject: 'Propito Daily Properties List', // Subject line
+    subject: `Propito Daily Properties List ${new Date().toLocaleDateString()}`, // Subject line
     text: JSON.stringify(res), // plain text body
     html // html body
   }
