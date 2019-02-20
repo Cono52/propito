@@ -3,7 +3,6 @@ const nodemailer = require('nodemailer')
 const emailProps = async (email = 'test', res) => {
   let account = await nodemailer.createTestAccount()
   let transporter
-  console.log(process.env.NODE_ENV)
   if (process.env.NODE_ENV === 'production') {
     transporter = nodemailer.createTransport({
       host: 'smtp.sendgrid.net', // <-- real smtp server
