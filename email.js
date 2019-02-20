@@ -2,23 +2,29 @@ const nodemailer = require('nodemailer')
 
 const emailProps = async (email = 'test', res) => {
   let account = await nodemailer.createTestAccount()
-
-  let transporter = nodemailer.createTransport({
-    host: 'smtp.sendgrid.net', // <-- real smtp server
-    port: 465,
-    secure: true,
-    auth: {
-      user: 'apikey',
-      pass: process.env.MAILKEY
-    }
-    // host: 'smtp.ethereal.email', // <-- test smtp server
-    // port: 587,
-    // secure: false,
-    // auth: {
-    //   user: account.user,
-    //   pass: account.pass
-    // }
-  })
+  let transporter
+  console.log(process.env.NODE_ENV)
+  if (process.env.NODE_ENV === 'production') {
+    transporter = nodemailer.createTransport({
+      host: 'smtp.sendgrid.net', // <-- real smtp server
+      port: 465,
+      secure: true,
+      auth: {
+        user: 'apikey',
+        pass: process.env.MAILKEY
+      }
+    })
+  } else {
+    transporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email', // <-- test smtp server
+      port: 587,
+      secure: false,
+      auth: {
+        user: account.user,
+        pass: account.pass
+      }
+    })
+  }
 
   const html = `
   <h3>🏠🤖 Propito property list 🤖🏠</h3>
@@ -43,10 +49,10 @@ const emailProps = async (email = 'test', res) => {
   }
 
   let info = await transporter.sendMail(mailOptions)
-
-  console.log('Message sent: %s', info.messageId)
-  // Preview only available when sending through an Ethereal account
-  // console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info))
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Message sent: %s', info.messageId)
+    console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info))
+  }
 }
 
 module.exports = emailProps
