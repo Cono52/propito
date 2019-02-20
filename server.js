@@ -32,7 +32,9 @@ app.get('/getPropsToEmail', async (req, res) => {
 
 app.listen(port, () => {
   console.log(`listening on port ${port}!`)
-  setUpCLI()
+  if (process.env.NODE_ENV !== 'production') {
+    setUpCLI()
+  }
 })
 
 const setUpCLI = () => {
