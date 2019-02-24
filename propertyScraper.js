@@ -1,4 +1,5 @@
 const puppeteer = require('puppeteer')
+const { blockedResourceTypes, skippedResources } = require('./resourceTypes')
 const { TimeoutError } = require('puppeteer/Errors')
 
 const validatePuppeteerError = error => {
@@ -7,44 +8,6 @@ const validatePuppeteerError = error => {
   }
   return 'An error ocurred'
 }
-
-const blockedResourceTypes = [
-  // 'image', <-- seems to fail when we block images
-  'media',
-  'font',
-  'texttrack',
-  'stylesheet',
-  'object',
-  'beacon',
-  'csp_report',
-  'imageset'
-]
-
-const skippedResources = [
-  'quantserve',
-  'adzerk',
-  'doubleclick',
-  'adition',
-  'exelator',
-  'sharethrough',
-  'cdn.api.twitter',
-  'google-analytics',
-  'googletagmanager',
-  'google',
-  'fontawesome',
-  'https://lid.zoocdn.com/80/60',
-  'facebook',
-  'analytics',
-  'optimizely',
-  'clicktale',
-  'mixpanel',
-  'match',
-  'criteo',
-  'zedo',
-  'clicksor',
-  'zoopla/static',
-  'tiqcdn'
-]
 
 const getProperties = async (location, bedsMax, bedsMin, scrapeWord) => {
   const browser = await puppeteer.launch({
@@ -72,6 +35,8 @@ const getProperties = async (location, bedsMax, bedsMin, scrapeWord) => {
     console.log('URL to hit:', URL)
     const page = await browser.newPage()
     await page.setViewport({ width: 1920, height: 1080 })
+
+    // Set up interceptor
     await page.setRequestInterception(true)
     page.on('request', request => {
       const requestUrl = request._url.split('?')[0].split('#')[0]
@@ -84,6 +49,7 @@ const getProperties = async (location, bedsMax, bedsMin, scrapeWord) => {
         request.continue()
       }
     })
+
     await page.goto(URL)
     console.log('...loading first page')
 
