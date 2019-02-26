@@ -1,12 +1,13 @@
 const puppeteer = require('puppeteer')
 const { blockedResourceTypes, skippedResources } = require('./resourceTypes')
 
-const rightMoveScraper = async () => {
+const rightMove = async () => {
   const browser = await puppeteer.launch({
     headless: true
     // args: ['--no-sandbox', '--disable-setuid-sandbox']
   })
 
+  // set up page and initial URL
   const page = await browser.newPage()
   await page.setViewport({ width: 1920, height: 1080 })
   const URL =
@@ -26,8 +27,9 @@ const rightMoveScraper = async () => {
     }
   })
 
+  console.log('....going to page')
   await page.goto(URL)
-
+  console.log('....on page')
   // right move use some kind of region code so we can just use a url we need to enter the area in their search field
   await page.click('.filters-location > input', { clickCount: 2 })
   await page.keyboard.press('Backspace')
@@ -56,6 +58,7 @@ const rightMoveScraper = async () => {
       const batch = []
       Array.from(document.querySelectorAll('.propertyCard')).forEach(card => {
         if (card.querySelector('.not-matched')) {
+          console.log('property found without keyword - return data')
           batch.push({
             done: true
           })
@@ -68,7 +71,12 @@ const rightMoveScraper = async () => {
         if (!link.includes('locationIdentifier')) {
           batch.push({
             link: link,
-            price: card.querySelector('.propertyCard-price').innerText
+            price: card.querySelector('.propertyCard-price').innerText,
+            desc: card.querySelector('[itemprop="description"]').innerText,
+            listed: card.querySelector('[class*="addedOrReduced"').innerText,
+            company: card
+              .querySelector('.propertyCard-branchSummary-branchName')
+              .innerText.split('by ')[1]
           })
         }
       })
@@ -79,14 +87,15 @@ const rightMoveScraper = async () => {
   // If we are already getting cards that dont have out keyword we quit
   if (data.find(obj => obj.done)) {
     console.log(data.filter(obj => !obj.done))
-    return
+    return data
   }
 
+  // loop through remaining pages
   for (let i = 1; i < pagesReturned; i++) {
+    // if we find a "done" entry, we return the data
     if (data.find(obj => obj.done)) {
       data.pop()
-      console.log(data)
-      return
+      return data
     }
     if (i !== 0) {
       // skip first nav since we are already on first page of results
@@ -111,7 +120,12 @@ const rightMoveScraper = async () => {
           if (!link.includes('locationIdentifier')) {
             batch.push({
               link: card.querySelector('.propertyCard-img-link').href,
-              price: card.querySelector('.propertyCard-price').innerText
+              price: card.querySelector('.propertyCard-price').innerText,
+              desc: card.querySelector('[itemprop="description"]').innerText,
+              listed: card.querySelector('[class*="addedOrReduced"').innerText,
+              company: card
+                .querySelector('.propertyCard-branchSummary-branchName')
+                .innerText.split('by ')[1]
             })
           }
         })
@@ -119,7 +133,8 @@ const rightMoveScraper = async () => {
       }))
     )
   }
-  console.log(data)
+
+  return data
 }
 
-rightMoveScraper()
+rightMove().then(res => console.log(res))

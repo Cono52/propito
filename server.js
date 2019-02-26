@@ -2,7 +2,7 @@ require('dotenv').config()
 const express = require('express')
 const app = express()
 const path = require('path')
-const getProperties = require('./propertyScraper.js')
+const zoopla = require('./zoopla.js')
 const emailProps = require('./email.js')
 
 const port = process.env.PORT || 8000
@@ -20,7 +20,7 @@ app.get('/getPropsToEmail', async (req, res) => {
   console.log(location, bedmax, bedmin, scrapeword, email)
   let result
   try {
-    result = await getProperties(location, bedmax, bedmin, scrapeword)
+    result = await zoopla(location, bedmax, bedmin, scrapeword)
   } catch (e) {
     console.log('Something went wrong while scraping')
   }
@@ -52,7 +52,7 @@ const setUpCLI = () => {
       return
     }
     const [location, bedMax, bedMin, scrapeword] = line.split(', ')
-    const result = await getProperties(location, bedMax, bedMin, scrapeword)
+    const result = await zoopla(location, bedMax, bedMin, scrapeword)
     console.log(result)
     rl.prompt()
   }).on('close', () => {

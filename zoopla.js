@@ -9,7 +9,7 @@ const validatePuppeteerError = error => {
   return 'An error ocurred'
 }
 
-const getProperties = async (location, bedsMax, bedsMin, scrapeWord) => {
+const zoopla = async (location, bedsMax, bedsMin, scrapeWord) => {
   const browser = await puppeteer.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -78,9 +78,9 @@ const getProperties = async (location, bedsMax, bedsMin, scrapeWord) => {
             const priceTag = element.querySelector('.listing-results-price')
             const company = element.querySelector('.listing-results-marketed')
             data.push({
-              searchId: priceTag['href'].split('/')[5].split('?')[0], // there seems to be a section of the URL that is unique, surprisingly not the seach_identifier
-              price: priceTag.innerText,
               link: priceTag['href'],
+              price: priceTag.innerText,
+              desc: element.getElementsByTagName('p')[1].innerText,
               listed: company.innerText.split('\n')[0],
               company: company.innerText.split('\n')[1]
             })
@@ -99,4 +99,8 @@ const getProperties = async (location, bedsMax, bedsMin, scrapeWord) => {
   }
 }
 
-module.exports = getProperties
+zoopla('Canary Wharf', '1', '0', 'Baltimore Wharf').then(res => {
+  console.log(res)
+})
+
+module.exports = zoopla
