@@ -26,7 +26,7 @@ jobs: # a collection of steps
           command: yarn test --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT: "coverage/junit/js-test-results.xml"
-        - store_test_results:
-            path: coverage/junit
-        - store_artifacts:
-            path: coverage
+      - store_test_results:
+          path: coverage/junit
+      - store_artifacts:
+          path: coverage
