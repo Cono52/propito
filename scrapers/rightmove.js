@@ -1,17 +1,16 @@
-const puppeteer = require('puppeteer')
-const { blockedResourceTypes, skippedResources } = require('./resourceTypes')
+const { blockedResourceTypes, skippedResources } = require('../resourceTypes')
 
-const rightMove = async () => {
-  const browser = await puppeteer.launch({
-    headless: true
-    // args: ['--no-sandbox', '--disable-setuid-sandbox']
-  })
-
-  // set up page and initial URL
-  const page = await browser.newPage()
+const rightMove = async (page, location, bedsMax, bedsMin, scrapeWord) => {
   await page.setViewport({ width: 1920, height: 1080 })
-  const URL =
-    'https://www.rightmove.co.uk/property-to-rent/find.html?locationIdentifier=REGION%5E1234&maxBedrooms=1&minBedrooms=0&maxPrice=2000&minPrice=100&sortType=18&includeLetAgreed=false'
+
+  const rootUrl = 'https://www.rightmove.co.uk/property-to-rent/find.html?'
+  const locationIdentifier = 'locationIdentifier=REGION%5E93554' // Brighton East Sussex
+  const maxPrice = 2000
+  const minPrice = 100
+
+  const URL = `${rootUrl}${locationIdentifier}&maxBedrooms=${bedsMax}&minBedrooms=${bedsMin}&maxPrice=${maxPrice}&minPrice=${minPrice}&sortType=18&includeLetAgreed=false&keywords=${scrapeWord
+    .split(' ')
+    .join('%20')}`
 
   // Set up interceptor
   await page.setRequestInterception(true)
@@ -27,13 +26,13 @@ const rightMove = async () => {
     }
   })
 
-  console.log('....going to page')
+  console.log('rightmove: ....going to page')
   await page.goto(URL)
-  console.log('....on page')
+  console.log('rightmove:  ....on page')
   // right move use some kind of region code so we can just use a url we need to enter the area in their search field
   await page.click('.filters-location > input', { clickCount: 2 })
   await page.keyboard.press('Backspace')
-  await page.keyboard.type('Holborn')
+  await page.keyboard.type(location)
   await page.waitFor(500)
   await page.waitForSelector('.autocomplete-suggestionLink')
   await page.click('.autocomplete-suggestion')
@@ -48,17 +47,20 @@ const rightMove = async () => {
       pages
     )
   })
-  console.log('pages returned:', pagesReturned)
+  console.log('rightmove: pages returned:', pagesReturned)
 
   // set up data array and push first page
   let data = []
   const urlWithRegionCode = page.url()
+  console.log('\n\nrightMove: URL to hit:', urlWithRegionCode)
   data.push(
     ...(await page.evaluate(() => {
       const batch = []
       Array.from(document.querySelectorAll('.propertyCard')).forEach(card => {
         if (card.querySelector('.not-matched')) {
-          console.log('property found without keyword - return data')
+          console.log(
+            'rightmove:  property found without keyword - return data'
+          )
           batch.push({
             done: true
           })
@@ -86,20 +88,18 @@ const rightMove = async () => {
 
   // If we are already getting cards that dont have out keyword we quit
   if (data.find(obj => obj.done)) {
-    console.log(data.filter(obj => !obj.done))
-    return data
+    return data.filter(obj => !obj.done)
   }
 
   // loop through remaining pages
   for (let i = 1; i < pagesReturned; i++) {
     // if we find a "done" entry, we return the data
     if (data.find(obj => obj.done)) {
-      data.pop()
-      return data
+      return data.filter(obj => !obj.done)
     }
     if (i !== 0) {
       // skip first nav since we are already on first page of results
-      console.log(`...navigating to page ${i + 1}`)
+      console.log(`rightmove: ...navigating to page ${i + 1}`)
       await page.goto(`${urlWithRegionCode}&index=${i * 24}`)
     }
     await page.waitForSelector('.propertyCard')
@@ -137,4 +137,4 @@ const rightMove = async () => {
   return data
 }
 
-rightMove().then(res => console.log(res))
+module.exports = rightMove

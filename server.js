@@ -2,13 +2,38 @@ require('dotenv').config()
 const express = require('express')
 const app = express()
 const path = require('path')
-const zoopla = require('./zoopla.js')
+const { zoopla, rightMove } = require('./scrapers')
 const emailProps = require('./email.js')
+const puppeteer = require('puppeteer')
+const deduplicateProperties = require('./deduplicateProperties')
 
 const port = process.env.PORT || 8000
 
 app.get('/', async (req, res) => {
   res.sendFile(path.join(`${__dirname}/index.html`))
+})
+
+app.get('/testRun', async (req, res) => {
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  })
+
+  const page = await browser.newPage()
+  const page2 = await browser.newPage()
+
+  Promise.all([
+    zoopla(page, 'Canary Wharf', 1, 0, 'Baltimore Wharf'),
+    rightMove(page2, 'Canary Wharf', 1, 0, 'Baltimore Wharf')
+  ]).then(async properties => {
+    const joinScrapedResults = properties.reduce(
+      (acc, curr) => acc.concat(curr),
+      []
+    )
+    const unqiueResults = deduplicateProperties(joinScrapedResults)
+    res.json(unqiueResults)
+    await browser.close()
+  })
 })
 
 app.get('/getPropsToEmail', async (req, res) => {

@@ -1,5 +1,5 @@
 {
-  "env": { "node": true },
+  "env": { "node": true, "jest/globals": true },
   "extends": ["standard"],
-  "plugins": ["standard"]
+  "plugins": ["standard", "jest"]
 }
