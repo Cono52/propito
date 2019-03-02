@@ -4,9 +4,9 @@
   "description": "keep on eye on your properties",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node src/server.js",
     "test": "jest",
-    "lint": "eslint ./**/*.js"
+    "lint": "eslint ./src/**/*.js"
   },
   "author": "Conor O'Flanagan",
   "license": "ISC",
