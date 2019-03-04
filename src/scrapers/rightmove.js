@@ -50,7 +50,7 @@ function extractor () {
   return batch
 }
 
-const rightMove = async (page, location, bedsMax, bedsMin, scrapeWord) => {
+const rightMove = async (page, location, bedsMax, bedsMin, keyword) => {
   await page.setViewport({ width: 1920, height: 1080 })
   // Set up interceptor
   await page.setRequestInterception(true)
@@ -73,7 +73,7 @@ const rightMove = async (page, location, bedsMax, bedsMin, scrapeWord) => {
   const maxPrice = 2000
   const minPrice = 100
 
-  const URL = `${rootUrl}${locationIdentifier}&maxBedrooms=${bedsMax}&minBedrooms=${bedsMin}&maxPrice=${maxPrice}&minPrice=${minPrice}&sortType=18&includeLetAgreed=false&keywords=${scrapeWord
+  const URL = `${rootUrl}${locationIdentifier}&maxBedrooms=${bedsMax}&minBedrooms=${bedsMin}&maxPrice=${maxPrice}&minPrice=${minPrice}&sortType=18&includeLetAgreed=false&keywords=${keyword
     .split(' ')
     .join('%20')}`
 

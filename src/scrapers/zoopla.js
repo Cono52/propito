@@ -8,7 +8,7 @@ const validatePuppeteerError = error => {
   return 'An error ocurred'
 }
 
-const zoopla = async (page, location, bedsMax, bedsMin, scrapeWord) => {
+const zoopla = async (page, location, bedsMax, bedsMin, keyword) => {
   await page.setViewport({ width: 1920, height: 1080 })
   try {
     let URL = `https://www.zoopla.co.uk/to-rent/property/${location
@@ -19,7 +19,7 @@ const zoopla = async (page, location, bedsMax, bedsMin, scrapeWord) => {
       )}/?beds_max=${bedsMax}&beds_min=${bedsMin}&page_size=100&price_frequency=per_month&q=${location
       .split(' ')
       .map(w => w.slice(0, 1).toUpperCase() + w.slice(1, w.length))
-      .join('%20')}&keywords=${scrapeWord
+      .join('%20')}&keywords=${keyword
       .split(' ')
       .join('%20')}&radius=0&results_sort=newest_listings&search_source=refine`
 
@@ -79,7 +79,7 @@ const zoopla = async (page, location, bedsMax, bedsMin, scrapeWord) => {
             })
           }
           return data
-        }, scrapeWord))
+        }, keyword))
       )
     }
     console.log('zoopla: done')
