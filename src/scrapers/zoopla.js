@@ -83,9 +83,11 @@ const zoopla = async (page, location, bedsMax, bedsMin, scrapeWord) => {
       )
     }
     console.log('zoopla: done')
+    await page.close()
     return results
   } catch (e) {
     console.log('zoopla: ', e)
+    await page.close()
     return validatePuppeteerError(e)
   }
 }

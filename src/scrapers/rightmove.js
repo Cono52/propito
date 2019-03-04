@@ -1,17 +1,57 @@
 const { blockedResourceTypes, skippedResources } = require('../resourceTypes')
+const axios = require('axios')
+
+const getRegionCodeForLocation = async location => {
+  if (location.length % 2) {
+    location = location.slice(0, location.length - 1)
+  }
+
+  const cutUpLocation = location
+    .toUpperCase()
+    .split('')
+    .reduce(
+      (acc, curr, i) =>
+        !((i + 1) % 2) ? acc.concat(`${curr}/`) : acc.concat(curr),
+      []
+    )
+    .join('')
+  return axios
+    .get(`https://www.rightmove.co.uk/typeAhead/uknostreet/${cutUpLocation}`)
+    .then(({ data }) =>
+      data.typeAheadLocations[0].locationIdentifier.split('^').join('%5E')
+    )
+}
+
+function extractor () {
+  const batch = []
+  Array.from(document.querySelectorAll('.propertyCard')).forEach(card => {
+    if (card.querySelector('.not-matched')) {
+      batch.push({
+        done: true
+      })
+      return
+    }
+    if (card.className.includes('propertyCard--featured')) {
+      return
+    }
+    const link = card.querySelector('.propertyCard-img-link').href
+    if (!link.includes('locationIdentifier')) {
+      batch.push({
+        link: card.querySelector('.propertyCard-img-link').href,
+        price: card.querySelector('.propertyCard-price').innerText,
+        desc: card.querySelector('[itemprop="description"]').innerText,
+        listed: card.querySelector('[class*="addedOrReduced"').innerText,
+        company: card
+          .querySelector('.propertyCard-branchSummary-branchName')
+          .innerText.split('by ')[1]
+      })
+    }
+  })
+  return batch
+}
 
 const rightMove = async (page, location, bedsMax, bedsMin, scrapeWord) => {
   await page.setViewport({ width: 1920, height: 1080 })
-
-  const rootUrl = 'https://www.rightmove.co.uk/property-to-rent/find.html?'
-  const locationIdentifier = 'locationIdentifier=REGION%5E93554' // Brighton East Sussex
-  const maxPrice = 2000
-  const minPrice = 100
-
-  const URL = `${rootUrl}${locationIdentifier}&maxBedrooms=${bedsMax}&minBedrooms=${bedsMin}&maxPrice=${maxPrice}&minPrice=${minPrice}&sortType=18&includeLetAgreed=false&keywords=${scrapeWord
-    .split(' ')
-    .join('%20')}`
-
   // Set up interceptor
   await page.setRequestInterception(true)
   page.on('request', request => {
@@ -26,17 +66,21 @@ const rightMove = async (page, location, bedsMax, bedsMin, scrapeWord) => {
     }
   })
 
+  const rootUrl = 'https://www.rightmove.co.uk/property-to-rent/find.html?'
+  const code = await getRegionCodeForLocation(location)
+  const locationIdentifier = `locationIdentifier=${code}`
+
+  const maxPrice = 2000
+  const minPrice = 100
+
+  const URL = `${rootUrl}${locationIdentifier}&maxBedrooms=${bedsMax}&minBedrooms=${bedsMin}&maxPrice=${maxPrice}&minPrice=${minPrice}&sortType=18&includeLetAgreed=false&keywords=${scrapeWord
+    .split(' ')
+    .join('%20')}`
+
+  console.log('rightmove: url to hit -> ', URL)
   console.log('rightmove: ....going to page')
   await page.goto(URL)
   console.log('rightmove:  ....on page')
-  // right move use some kind of region code so we can just use a url we need to enter the area in their search field
-  await page.click('.filters-location > input', { clickCount: 2 })
-  await page.keyboard.press('Backspace')
-  await page.keyboard.type(location)
-  await page.waitFor(500)
-  await page.waitForSelector('.autocomplete-suggestionLink')
-  await page.click('.autocomplete-suggestion')
-  await page.waitFor(500)
 
   // grab the number of pages and log them out
   const pages = '[data-bind="text: total"]'
@@ -51,43 +95,14 @@ const rightMove = async (page, location, bedsMax, bedsMin, scrapeWord) => {
 
   // set up data array and push first page
   let data = []
-  const urlWithRegionCode = page.url()
-  console.log('\n\nrightMove: URL to hit:', urlWithRegionCode)
-  data.push(
-    ...(await page.evaluate(() => {
-      const batch = []
-      Array.from(document.querySelectorAll('.propertyCard')).forEach(card => {
-        if (card.querySelector('.not-matched')) {
-          console.log(
-            'rightmove:  property found without keyword - return data'
-          )
-          batch.push({
-            done: true
-          })
-          return
-        }
-        if (card.className.includes('propertyCard--featured')) {
-          return
-        }
-        const link = card.querySelector('.propertyCard-img-link').href
-        if (!link.includes('locationIdentifier')) {
-          batch.push({
-            link: link,
-            price: card.querySelector('.propertyCard-price').innerText,
-            desc: card.querySelector('[itemprop="description"]').innerText,
-            listed: card.querySelector('[class*="addedOrReduced"').innerText,
-            company: card
-              .querySelector('.propertyCard-branchSummary-branchName')
-              .innerText.split('by ')[1]
-          })
-        }
-      })
-      return batch
-    }))
-  )
+  await page.waitForSelector('.links-group-header span')
+  await page.waitFor(500)
+  data.push(...(await page.evaluate(extractor)))
 
-  // If we are already getting cards that dont have out keyword we quit
+  // If we are already getting cards that dont have our keyword, we quit
   if (data.find(obj => obj.done)) {
+    await page.close()
+    console.log('match found with no keyword on p1 - EXIT')
     return data.filter(obj => !obj.done)
   }
 
@@ -95,45 +110,19 @@ const rightMove = async (page, location, bedsMax, bedsMin, scrapeWord) => {
   for (let i = 1; i < pagesReturned; i++) {
     // if we find a "done" entry, we return the data
     if (data.find(obj => obj.done)) {
+      await page.close()
+      console.log('match found with no keyword - EXIT')
       return data.filter(obj => !obj.done)
     }
-    if (i !== 0) {
-      // skip first nav since we are already on first page of results
-      console.log(`rightmove: ...navigating to page ${i + 1}`)
-      await page.goto(`${urlWithRegionCode}&index=${i * 24}`)
-    }
-    await page.waitForSelector('.propertyCard')
-    data.push(
-      ...(await page.evaluate(() => {
-        const batch = []
-        Array.from(document.querySelectorAll('.propertyCard')).forEach(card => {
-          if (card.querySelector('.not-matched')) {
-            batch.push({
-              done: true
-            })
-            return
-          }
-          if (card.className.includes('propertyCard--featured')) {
-            return
-          }
-          const link = card.querySelector('.propertyCard-img-link').href
-          if (!link.includes('locationIdentifier')) {
-            batch.push({
-              link: card.querySelector('.propertyCard-img-link').href,
-              price: card.querySelector('.propertyCard-price').innerText,
-              desc: card.querySelector('[itemprop="description"]').innerText,
-              listed: card.querySelector('[class*="addedOrReduced"').innerText,
-              company: card
-                .querySelector('.propertyCard-branchSummary-branchName')
-                .innerText.split('by ')[1]
-            })
-          }
-        })
-        return batch
-      }))
-    )
+
+    console.log(`rightmove: ...navigating to page ${i + 1}`)
+    await page.goto(`${URL}&index=${i * 24}`)
+    await page.waitForSelector('.links-group-header span')
+    await page.waitFor(500)
+    data.push(...(await page.evaluate(extractor)))
   }
 
+  await page.close()
   return data
 }
 
