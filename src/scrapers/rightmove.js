@@ -50,7 +50,10 @@ function extractor () {
   return batch
 }
 
-const rightMove = async (page, location, bedsMax, bedsMin, keyword) => {
+const rightMove = async (
+  page,
+  { location, bedsMax, bedsMin, priceMin, priceMax, keyword }
+) => {
   await page.setViewport({ width: 1920, height: 1080 })
   // Set up interceptor
   await page.setRequestInterception(true)
@@ -70,12 +73,16 @@ const rightMove = async (page, location, bedsMax, bedsMin, keyword) => {
   const code = await getRegionCodeForLocation(location)
   const locationIdentifier = `locationIdentifier=${code}`
 
-  const maxPrice = 2000
-  const minPrice = 100
-
-  const URL = `${rootUrl}${locationIdentifier}&maxBedrooms=${bedsMax}&minBedrooms=${bedsMin}&maxPrice=${maxPrice}&minPrice=${minPrice}&sortType=18&includeLetAgreed=false&keywords=${keyword
-    .split(' ')
-    .join('%20')}`
+  let URL = `${rootUrl}${locationIdentifier}`
+  if (bedsMax) URL = URL.concat(`&maxBedrooms=${bedsMax}`)
+  if (bedsMin) URL = URL.concat(`&minBedrooms=${bedsMin}`)
+  if (priceMax) URL = URL.concat(`&maxPrice=${priceMax}`)
+  if (priceMin) URL = URL.concat(`&minPrice=${priceMin}`)
+  URL = URL.concat(
+    `&sortType=18&includeLetAgreed=false&keywords=${keyword
+      .split(' ')
+      .join('%20')}`
+  )
 
   console.log('rightmove: url to hit -> ', URL)
   console.log('rightmove: ....going to page')

@@ -17,13 +17,29 @@ app.get('/getPropsToEmail', async (req, res) => {
     res.status(400).send('Please provide a keyword')
     return
   }
-  const { location, bedmax, bedmin, keyword, email } = req.query
-  console.log(location, bedmax, bedmin, keyword, email)
+  const {
+    location,
+    bedmax,
+    bedmin,
+    pricemax,
+    pricemin,
+    keyword,
+    email
+  } = req.query
+  console.log(location, bedmax, bedmin, pricemax, pricemin, keyword, email)
   let result
   try {
-    result = await motherScraper(location, bedmax, bedmin, keyword)
+    result = await motherScraper({
+      location,
+      bedsMax: bedmax,
+      bedsMin: bedmin,
+      priceMin: pricemin,
+      priceMax: pricemax,
+      keyword
+    })
   } catch (e) {
     console.log('Something went wrong while scraping')
+    console.log(e)
   }
   if (result) {
     emailProps(email, result)

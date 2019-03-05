@@ -8,20 +8,33 @@ const validatePuppeteerError = error => {
   return 'An error ocurred'
 }
 
-const zoopla = async (page, location, bedsMax, bedsMin, keyword) => {
+const zoopla = async (
+  page,
+  { location, bedsMax, bedsMin, priceMin, priceMax, keyword }
+) => {
   await page.setViewport({ width: 1920, height: 1080 })
+  const results = []
   try {
     let URL = `https://www.zoopla.co.uk/to-rent/property/${location
       .toLowerCase()
       .split(' ')
-      .join(
-        '-'
-      )}/?beds_max=${bedsMax}&beds_min=${bedsMin}&page_size=100&price_frequency=per_month&q=${location
-      .split(' ')
-      .map(w => w.slice(0, 1).toUpperCase() + w.slice(1, w.length))
-      .join('%20')}&keywords=${keyword
-      .split(' ')
-      .join('%20')}&radius=0&results_sort=newest_listings&search_source=refine`
+      .join('-')}/?`
+
+    if (bedsMax) URL = URL.concat(`beds_max=${bedsMax}`)
+    if (bedsMin) URL = URL.concat(`&beds_min=${bedsMin}`)
+    if (priceMax) URL = URL.concat(`&price_max=${priceMax}`)
+    if (priceMin) URL = URL.concat(`&price_min=${priceMin}`)
+
+    URL = URL.concat(
+      `&page_size=100&price_frequency=per_month&q=${location
+        .split(' ')
+        .map(w => w.slice(0, 1).toUpperCase() + w.slice(1, w.length))
+        .join('%20')}&keywords=${keyword
+        .split(' ')
+        .join(
+          '%20'
+        )}&radius=0&results_sort=newest_listings&search_source=refine`
+    )
 
     console.log('\n\nzoopla: URL to hit:', URL)
 
@@ -52,14 +65,15 @@ const zoopla = async (page, location, bedsMax, bedsMin, keyword) => {
 
     console.log(`zoopla: ...scraping pages 2-${pagesReturned + 1}`)
 
-    const results = []
     for (let i = 0; i < pagesReturned; i++) {
       if (i !== 0) {
         // skip first nav since we are already on first page of results
         console.log(`zoopla: ...navigating to page ${i + 1}`)
         await page.goto(`${URL}&pn=${i + 1}`)
       }
+
       await page.waitForSelector('.listing-results-wrapper')
+
       results.push(
         ...(await page.evaluate(key => {
           let data = [] // Create an empty array that will store our data
@@ -86,9 +100,9 @@ const zoopla = async (page, location, bedsMax, bedsMin, keyword) => {
     await page.close()
     return results
   } catch (e) {
-    console.log('zoopla: ', e)
+    console.log('zoopla: ', validatePuppeteerError(e))
     await page.close()
-    return validatePuppeteerError(e)
+    return results
   }
 }
 
